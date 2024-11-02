@@ -37,7 +37,7 @@ a:hover {
 
 #inscreva-se-btn {
     border: 2px solid rgb(255, 190, 40);
-    padding: 10px;
+    padding-left: 10px;
     border-radius: 25px;
     background-color: rgb(255, 190, 40);
 }
