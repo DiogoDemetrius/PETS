@@ -47,7 +47,7 @@
     transition: all 0.3s ease;
     font-family: poppinsregular;
 }
-
+.sidebar .material-icons
 .sidebar button:hover {
     background: #a7a7a7;
     transform: scale(1.02);
@@ -76,11 +76,15 @@
     transition: all 0.3s ease;
     white-space: nowrap;
     font-family: poppinsregular;
+    width: 0;
+    display: none;
 }
 
 .sidebar.active .button-text {
     opacity: 1;
     pointer-events: auto;
+    width: auto;
+    display: block;
 }
 
 /* Ajuste o conteúdo principal */
