@@ -1,107 +1,205 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import mysql.connector
-from werkzeug.security import generate_password_hash, check_password_hash
-import os
-from dotenv import load_dotenv
-
-# Carrega variáveis de ambiente
-load_dotenv()
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
-# Configurando CORS para permitir todas as origens
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
-# Configuração do banco de dados
-db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '1234',
-    'database': 'pets'
-}
-
-# Função para conectar ao banco de dados
+# Configuração do MySQL
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
-
-@app.route('/registrar', methods=['POST'])
-def registrar():
     try:
-        dados = request.get_json()
-        
-        # Verifica se todos os campos necessários estão presentes
-        campos_necessarios = ['nome', 'nome_usuario', 'senha', 'cpf', 'email']
-        for campo in campos_necessarios:
-            if campo not in dados:
-                return jsonify({'erro': f'Campo {campo} é obrigatório'}), 400
-        
-        # Hash da senha
-        senha_hash = generate_password_hash(dados['senha'])
-        
-        # Conecta ao banco de dados
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Insere o usuário no banco de dados
-        sql = """INSERT INTO usuario (nome, nome_usuario, senha, cpf, email) 
-                 VALUES (%s, %s, %s, %s, %s)"""
-        valores = (
-            dados['nome'],
-            dados['nome_usuario'],
-            senha_hash,
-            dados['cpf'],
-            dados['email']
+        print("Tentando conectar ao banco de dados...")
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="pets"
         )
-        
-        cursor.execute(sql, valores)
-        conn.commit()
-        
-        # Fecha a conexão
-        cursor.close()
-        conn.close()
-        
-        return jsonify({'mensagem': 'Usuário registrado com sucesso'}), 201
-        
-    except mysql.connector.Error as erro:
-        return jsonify({'erro': f'Erro no banco de dados: {str(erro)}'}), 500
-    except Exception as erro:
-        return jsonify({'erro': f'Erro: {str(erro)}'}), 500
+        print("Conexão bem sucedida!")
+        return connection
+    except mysql.connector.Error as err:
+        print(f"Erro ao conectar ao banco de dados: {err}")
+        raise
 
-@app.route('/login', methods=['POST'])
-def login():
+def enviar_email_recuperacao(email):
+    # Configurações do servidor de email
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    sender_email = "diogod.mmoreira@gmail.com"  # Seu email
+    sender_password = "cjsp qbpz bjha crca"  # Substitua pela senha de app gerada
+
     try:
-        dados = request.get_json()
+        # Criar mensagem
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = email
+        msg['Subject'] = "Recuperação de Senha - PETs Care"
+
+        body = """
+        Você solicitou a recuperação de senha.
         
-        # Verifica se recebeu nome_usuario e senha
-        if not dados or 'nome_usuario' not in dados or 'senha' not in dados:
-            return jsonify({'erro': 'Nome de usuário e senha são obrigatórios'}), 400
+        Para criar uma nova senha, clique no link abaixo:
+        http://localhost:8000/reset-password.html
         
-        # Conecta ao banco de dados
+        Se você não solicitou esta recuperação, ignore este email.
+        """
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Conectar ao servidor SMTP com mais logs
+        print("Conectando ao servidor SMTP...")
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.set_debuglevel(1)  # Ativa logs detalhados
+        
+        print("Iniciando TLS...")
+        server.starttls()
+        
+        print("Tentando login no Gmail...")
+        server.login(sender_email, sender_password)
+        
+        print("Enviando email...")
+        text = msg.as_string()
+        server.sendmail(sender_email, email, text)
+        
+        print("Fechando conexão...")
+        server.quit()
+        
+        print("Email enviado com sucesso!")
+        return True
+        
+    except Exception as e:
+        print(f"Erro detalhado ao enviar email: {str(e)}")
+        return False
+
+@app.route('/recuperar-senha', methods=['POST'])
+def recuperar_senha():
+    dados = request.get_json()
+    email = dados.get('email')
+
+    if not email:
+        return jsonify({'erro': 'Email não fornecido'}), 400
+
+    conn = None
+    cursor = None
+
+    try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Busca o usuário pelo nome_usuario
-        sql = "SELECT * FROM usuario WHERE nome_usuario = %s"
-        cursor.execute(sql, (dados['nome_usuario'],))
+        # Adicionar logs para debug
+        print(f"\n=== TENTATIVA DE RECUPERAÇÃO DE SENHA ===")
+        print(f"Email recebido: '{email}'")
+        
+        # Primeiro vamos ver todos os emails no banco
+        cursor.execute('SELECT email FROM usuario')
+        todos_emails = cursor.fetchall()
+        print("\nEmails cadastrados no banco:")
+        for user in todos_emails:
+            print(f"Email: '{user['email']}'")
+        
+        # Agora verificamos o email específico
+        cursor.execute('SELECT * FROM usuario WHERE email = %s', (email,))
         usuario = cursor.fetchone()
         
-        # Fecha a conexão
-        cursor.close()
-        conn.close()
-        
-        # Verifica se encontrou o usuário e se a senha está correta
-        if usuario and check_password_hash(usuario['senha'], dados['senha']):
-            # Remove a senha do objeto antes de retornar
-            usuario.pop('senha', None)
-            return jsonify({
-                'mensagem': 'Login realizado com sucesso',
-                'usuario': usuario
-            })
-        else:
-            return jsonify({'erro': 'Nome de usuário ou senha inválidos'}), 401
+        if usuario:
+            print(f"\nUsuário encontrado:")
+            print(f"ID: {usuario['ID']}")
+            print(f"Nome: {usuario['nome']}")
+            print(f"Email: {usuario['email']}")
             
-    except Exception as erro:
-        return jsonify({'erro': f'Erro no servidor: {str(erro)}'}), 500
+            if enviar_email_recuperacao(email):
+                return jsonify({'mensagem': 'Email de recuperação enviado com sucesso'}), 200
+            else:
+                return jsonify({'erro': 'Erro ao enviar email de recuperação'}), 500
+        else:
+            print(f"\nEmail não encontrado no banco")
+            return jsonify({'erro': 'Email não encontrado'}), 404
+
+    except mysql.connector.Error as err:
+        print(f"\nErro MySQL: {err}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    except Exception as e:
+        print(f"\nErro não esperado: {e}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def verificar_senha(senha_fornecida, senha_hash_banco):
+    try:
+        print(f"\nVerificando senha:")
+        print(f"Senha fornecida: {senha_fornecida}")
+        print(f"Hash do banco: {senha_hash_banco}")
+        
+        # Verifica se a senha corresponde ao hash usando o método do Werkzeug
+        return check_password_hash(senha_hash_banco, senha_fornecida)
+        
+    except Exception as e:
+        print(f"Erro ao verificar senha: {e}")
+        return False
+
+@app.route('/login', methods=['POST'])
+def login():
+    dados = request.get_json()
+    nome_usuario = dados.get('nome_usuario')
+    senha = dados.get('senha')
+    
+    print("\n=== TENTATIVA DE LOGIN ===")
+    print(f"Nome de usuário recebido: '{nome_usuario}'")
+    print(f"Senha recebida: '{senha}'")
+    
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Buscar usuário pelo nome de usuário
+        query = 'SELECT * FROM usuario WHERE nome_usuario = %s'
+        cursor.execute(query, (nome_usuario,))
+        usuario_encontrado = cursor.fetchone()
+        
+        if usuario_encontrado:
+            print("\nUsuário encontrado no banco:")
+            print(f"Nome de usuário: {usuario_encontrado['nome_usuario']}")
+            
+            # Verificar a senha
+            senha_banco = usuario_encontrado['senha']
+            
+            if verificar_senha(senha, senha_banco):
+                print("\nLogin bem sucedido!")
+                usuario_dict = {
+                    'id': usuario_encontrado['ID'],
+                    'nome': usuario_encontrado['nome'],
+                    'nome_usuario': usuario_encontrado['nome_usuario'],
+                    'cpf': usuario_encontrado['cpf'],
+                    'email': usuario_encontrado['email']
+                }
+                return jsonify({'usuario': usuario_dict}), 200
+            else:
+                print("\nSenha incorreta")
+                return jsonify({'erro': 'Usuário ou senha inválidos'}), 401
+        else:
+            print("\nUsuário não encontrado")
+            return jsonify({'erro': 'Usuário ou senha inválidos'}), 401
+
+    except mysql.connector.Error as err:
+        print(f"\nErro MySQL: {err}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    except Exception as e:
+        print(f"\nErro não esperado: {e}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

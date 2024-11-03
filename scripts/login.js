@@ -11,7 +11,11 @@ function toggleSenha() {
 
 // Verifica quando a página carrega
 window.onload = function() {
-    // Manter apenas outras funcionalidades necessárias
+    // Verificar se já está logado
+    const usuario = localStorage.getItem('usuario');
+    if (usuario) {
+        window.location.replace('loged_menu.html');
+    }
 }
 
 async function loginUsuario(event) {
@@ -38,8 +42,13 @@ async function loginUsuario(event) {
         const resultado = await response.json();
         
         if (response.ok) {
+            // Salvar usuário no localStorage
             localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
-            window.location.replace('loged_menu.html');
+            console.log('Login bem sucedido, redirecionando...');
+            
+            // Forçar o redirecionamento
+            window.location.href = 'loged_menu.html';
+            return false; // Garantir que o form não seja submetido
         } else {
             alert('Erro: ' + resultado.erro);
         }
