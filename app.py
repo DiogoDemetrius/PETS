@@ -4,7 +4,7 @@ import mysql.connector
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 CORS(app)
@@ -224,12 +224,71 @@ def atualizar_senha():
         if not usuario:
             return jsonify({'erro': 'Email não encontrado'}), 404
 
-        # Atualizar a senha
+        # Gerar hash da nova senha
+        senha_hash = generate_password_hash(nova_senha, method='scrypt')
+        
+        # Atualizar a senha com o hash
         cursor.execute('UPDATE usuario SET senha = %s WHERE email = %s', 
-                      (nova_senha, email))
+                      (senha_hash, email))
         conn.commit()
         
         return jsonify({'mensagem': 'Senha atualizada com sucesso'}), 200
+
+    except mysql.connector.Error as err:
+        print(f"Erro MySQL: {err}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    except Exception as e:
+        print(f"Erro não esperado: {e}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/registrar', methods=['POST'])
+def registrar():
+    dados = request.get_json()
+    nome_usuario = dados.get('nome_usuario')
+    nome = dados.get('nome')
+    cpf = dados.get('cpf')
+    email = dados.get('email')
+    senha = dados.get('senha')
+
+    if not all([nome_usuario, nome, cpf, email, senha]):
+        return jsonify({'erro': 'Todos os campos são obrigatórios'}), 400
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar se o nome de usuário já existe
+        cursor.execute('SELECT * FROM usuario WHERE nome_usuario = %s', (nome_usuario,))
+        if cursor.fetchone():
+            return jsonify({'erro': 'Nome de usuário já existe'}), 400
+        
+        # Verificar se o email já existe
+        cursor.execute('SELECT * FROM usuario WHERE email = %s', (email,))
+        if cursor.fetchone():
+            return jsonify({'erro': 'Email já cadastrado'}), 400
+        
+        # Verificar se o CPF já existe
+        cursor.execute('SELECT * FROM usuario WHERE cpf = %s', (cpf,))
+        if cursor.fetchone():
+            return jsonify({'erro': 'CPF já cadastrado'}), 400
+
+        # Inserir novo usuário
+        cursor.execute('''
+            INSERT INTO usuario (nome_usuario, nome, cpf, email, senha)
+            VALUES (%s, %s, %s, %s, %s)
+        ''', (nome_usuario, nome, cpf, email, senha))
+        
+        conn.commit()
+        
+        return jsonify({'mensagem': 'Usuário registrado com sucesso'}), 201
 
     except mysql.connector.Error as err:
         print(f"Erro MySQL: {err}")
