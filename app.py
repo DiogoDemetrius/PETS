@@ -39,11 +39,11 @@ def enviar_email_recuperacao(email):
         msg['To'] = email
         msg['Subject'] = "Recuperação de Senha - PETs Care"
 
-        body = """
+        body = f"""
         Você solicitou a recuperação de senha.
         
         Para criar uma nova senha, clique no link abaixo:
-        http://localhost:8000/reset-password.html
+        http://localhost:8000/reset-password.html?email={email}
         
         Se você não solicitou esta recuperação, ignore este email.
         """
@@ -194,6 +194,48 @@ def login():
         return jsonify({'erro': 'Erro interno do servidor'}), 500
     except Exception as e:
         print(f"\nErro não esperado: {e}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/atualizar-senha', methods=['POST'])
+def atualizar_senha():
+    dados = request.get_json()
+    email = dados.get('email')
+    nova_senha = dados.get('nova_senha')
+
+    if not email or not nova_senha:
+        return jsonify({'erro': 'Email e nova senha são obrigatórios'}), 400
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verificar se o email existe
+        cursor.execute('SELECT * FROM usuario WHERE email = %s', (email,))
+        usuario = cursor.fetchone()
+        
+        if not usuario:
+            return jsonify({'erro': 'Email não encontrado'}), 404
+
+        # Atualizar a senha
+        cursor.execute('UPDATE usuario SET senha = %s WHERE email = %s', 
+                      (nova_senha, email))
+        conn.commit()
+        
+        return jsonify({'mensagem': 'Senha atualizada com sucesso'}), 200
+
+    except mysql.connector.Error as err:
+        print(f"Erro MySQL: {err}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+    except Exception as e:
+        print(f"Erro não esperado: {e}")
         return jsonify({'erro': 'Erro interno do servidor'}), 500
     finally:
         if cursor:
