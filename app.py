@@ -5,6 +5,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.security import check_password_hash, generate_password_hash
+from dotenv import load_dotenv
+import os
+
+# Carrega as variáveis de ambiente
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -14,10 +19,10 @@ def get_db_connection():
     try:
         print("Tentando conectar ao banco de dados...")
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="1234",
-            database="pets"
+            host=os.getenv('MYSQL_HOST'),
+            user=os.getenv('MYSQL_USER'),
+            password=os.getenv('MYSQL_PASSWORD'),
+            database=os.getenv('MYSQL_DATABASE')
         )
         print("Conexão bem sucedida!")
         return connection
@@ -29,8 +34,8 @@ def enviar_email_recuperacao(email):
     # Configurações do servidor de email
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
-    sender_email = "diogod.mmoreira@gmail.com"  # Seu email
-    sender_password = "cjsp qbpz bjha crca"  # Substitua pela senha de app gerada
+    sender_email = os.getenv('GMAIL_USER')
+    sender_password = os.getenv('GMAIL_APP_PASSWORD')
 
     try:
         # Criar mensagem
@@ -280,11 +285,14 @@ def registrar():
         if cursor.fetchone():
             return jsonify({'erro': 'CPF já cadastrado'}), 400
 
-        # Inserir novo usuário
+        # Gerar hash da senha antes de salvar
+        senha_hash = generate_password_hash(senha, method='scrypt')
+
+        # Inserir novo usuário com a senha hash
         cursor.execute('''
             INSERT INTO usuario (nome_usuario, nome, cpf, email, senha)
             VALUES (%s, %s, %s, %s, %s)
-        ''', (nome_usuario, nome, cpf, email, senha))
+        ''', (nome_usuario, nome, cpf, email, senha_hash))
         
         conn.commit()
         
