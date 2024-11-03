@@ -10,6 +10,8 @@
     padding: 6px 14px;
     transition: all 0.5s ease;
     z-index: 99;
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar.active {
@@ -47,6 +49,7 @@
     transition: all 0.3s ease;
     font-family: poppinsregular;
 }
+
 .sidebar .material-icons
 .sidebar button:hover {
     background: #a7a7a7;
@@ -112,4 +115,74 @@ main.sidebar-active {
     main.sidebar-active {
         margin-left: 220px;
     }
+}
+
+.logout-container {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: calc(100% - 28px);
+    margin: 0 14px;
+}
+
+.logout-container button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #6e6e6e;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: poppinsregular;
+}
+
+.logout-container button:hover {
+    background: #ff4444;
+}
+
+.sidebar:not(.active) .logout-container {
+    width: calc(100% - 28px);
+}
+
+.sidebar.active .logout-container {
+    width: calc(100% - 28px);
+}
+
+/* Estilo base para todos os botões da sidebar */
+.sidebar button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #6e6e6e;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: poppinsregular;
+}
+
+/* Hover para os botões da sidebar-buttons (tom mais claro de cinza) */
+.sidebar-buttons button:hover {
+    background: #808080;
+}
+
+/* Estilo específico para o botão de logout */
+.logout-container {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: calc(100% - 28px);
+    margin: 0 14px;
+}
+
+/* Hover vermelho apenas para o botão de logout */
+.logout-container button:hover {
+    background: #ff4444;
 }

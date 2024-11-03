@@ -8,7 +8,6 @@ body {
 }
 
 header {
-
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -33,18 +32,6 @@ a {
 a:hover {
     color: rgb(255, 190, 40);
     transition: 0.3s all;
-}
-
-#inscreva-se-btn {
-    border: 2px solid rgb(255, 190, 40);
-    padding-left: 10px;
-    border-radius: 25px;
-    background-color: rgb(255, 190, 40);
-}
-
-#inscreva-se-btn:hover {
-    background-color: rgb(255, 190, 40);
-    color: white;
 }
 
 #registrar-se-btn {
@@ -129,7 +116,7 @@ input {
     gap: 5px;
     width: 100%;
     max-width: 400px;
-    margin-top: -10px;  /* Ajusta o espaçamento em relação ao input de senha */
+    margin-top: -10px;
 }
 
 .checkbox-container input[type="checkbox"] {
@@ -142,4 +129,10 @@ input {
 .checkbox-container label {
     color: white;
     font-size: 14px;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }

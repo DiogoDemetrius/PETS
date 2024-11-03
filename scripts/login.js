@@ -9,6 +9,11 @@ function toggleSenha() {
     }
 }
 
+// Verifica quando a página carrega
+window.onload = function() {
+    // Manter apenas outras funcionalidades necessárias
+}
+
 async function loginUsuario(event) {
     event.preventDefault();
     
@@ -21,7 +26,6 @@ async function loginUsuario(event) {
     };
 
     try {
-        console.log('Enviando dados:', dados);
         const response = await fetch('http://127.0.0.1:5000/login', {
             method: 'POST',
             headers: {
@@ -31,20 +35,16 @@ async function loginUsuario(event) {
             body: JSON.stringify(dados)
         });
 
-        console.log('Resposta recebida:', response);
         const resultado = await response.json();
         
         if (response.ok) {
-            alert('Login realizado com sucesso!');
-            // Salva os dados do usuário no localStorage (opcional)
             localStorage.setItem('usuario', JSON.stringify(resultado.usuario));
-            // Aqui você pode redirecionar para a página principal
-            // window.location.href = 'pagina-principal.html';
+            window.location.replace('loged_menu.html');
         } else {
             alert('Erro: ' + resultado.erro);
         }
     } catch (erro) {
         console.error('Erro completo:', erro);
-        alert('Erro ao conectar com o servidor. Verifique se a API está rodando.');
+        alert('Erro ao conectar com o servidor: ' + erro);
     }
 }
