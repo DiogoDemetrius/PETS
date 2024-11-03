@@ -9,6 +9,9 @@ Sistema web para gerenciamento de clínica veterinária com funcionalidades de a
 - Recuperação de senha via email
 - Menu lateral responsivo
 - Interface adaptativa para diferentes dispositivos
+- Validação de senhas na recuperação
+- Criptografia de senhas usando Werkzeug
+- Verificação de duplicidade de usuários/emails/CPF
 
 ## 📋 Pré-requisitos
 
@@ -20,4 +23,4 @@ Sistema web para gerenciamento de clínica veterinária com funcionalidades de a
 - Python 3.x
 - MySQL Server
 
-### Bibliotecas Python 
+### Bibliotecas Python
