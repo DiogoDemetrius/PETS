@@ -60,6 +60,45 @@ CREATE TABLE usuario (
     cpf TEXT,
     email TEXT
 );
+
+CREATE TABLE mensagem (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    remetente_id INT,
+    destinatario_id INT,
+    conteudo TEXT,
+    data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (remetente_id) REFERENCES usuario(ID),
+    FOREIGN KEY (destinatario_id) REFERENCES usuario(ID)
+);
+
+CREATE TABLE caes (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    nome TEXT,
+    idade TEXT,
+    raca TEXT,
+    genero TEXT,
+    status TEXT,
+    usuario_id INT,
+    FOREIGN KEY (usuario_id) REFERENCES usuario(ID)
+);
+
+CREATE TABLE fotos (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    cao_id INT,
+    url_foto TEXT,
+    FOREIGN KEY (cao_id) REFERENCES caes(ID)
+);
+
+CREATE TABLE documentos (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    cao_id INT,
+    pedigree TEXT,
+    registro_saude_vacina TEXT,
+    identificacao_micro TEXT,
+    mapeamento_genetico TEXT,
+    ancestralidade TEXT,
+    FOREIGN KEY (cao_id) REFERENCES caes(ID)
+);
 ```
 
 ### Configuração do Gmail
